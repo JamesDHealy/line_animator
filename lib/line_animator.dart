@@ -209,6 +209,7 @@ class LineAnimator extends StatefulWidget {
       this.begin = 0.0,
       this.end = 1.0,
       this.controller,
+      this.loop = false,
       this.isReversed = false,
       this.interpolateBetweenPoints = true})
       : super(key: key);
