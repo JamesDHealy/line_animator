@@ -233,9 +233,6 @@ class _LineAnimatorState extends State<LineAnimator>
   @override
   void initState() {
     controller = AnimationController(duration: widget.duration, vsync: this);
-    if (widget.loop) {
-      controller.repeat(period: widget.duration, reverse: widget.isReversed);
-    }
     startAnimation();
     super.initState();
   }
@@ -264,6 +261,13 @@ class _LineAnimatorState extends State<LineAnimator>
               interpolatedResult.point,
               interpolatedResult.angle,
               animation.value);
+
+        if (controller.isCompleted) {
+          if (widget.loop) {
+            controller.repeat(
+                period: widget.duration, reverse: widget.isReversed);
+          }
+        }
       })
       ..addStatusListener((status) {
         widget.stateChangeCallback?.call(animation.status, builtPoints);
