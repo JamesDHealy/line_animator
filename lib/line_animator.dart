@@ -50,6 +50,10 @@ class PointInterpolator {
 
   void reload() {
     lastPointIndex = 1;
+    totalDistance = 0.0;
+    _previousPoint = null;
+    interpolatedPoint = null;
+    _lastAngle = 0.0;
     builtPoints = [];
     points = [];
     buildPointsMap();
@@ -189,11 +193,12 @@ class LineAnimator extends StatefulWidget {
   final Function? distanceFunc;
   final Function? stateChangeCallback;
   final Function? duringCallback;
-  final Duration duration;
+  final Duration? duration;
   final double? begin;
   final double? end;
   final bool isReversed;
   final bool loop;
+  final Duration? loopTimeoutDuration;
   final AnimationController? controller;
   final bool interpolateBetweenPoints;
 
@@ -210,6 +215,7 @@ class LineAnimator extends StatefulWidget {
       this.end = 1.0,
       this.controller,
       this.loop = false,
+      this.loopTimeoutDuration,
       this.isReversed = false,
       this.interpolateBetweenPoints = true})
       : super(key: key);
@@ -261,16 +267,25 @@ class _LineAnimatorState extends State<LineAnimator>
               interpolatedResult.point,
               interpolatedResult.angle,
               animation.value);
-
-        if (controller.isCompleted) {
+      })
+      ..addStatusListener((status) async {
+        widget.stateChangeCallback?.call(animation.status, builtPoints);
+        // debugPrint("animation.status: ${animation.status}");
+        if (animation.isCompleted) {
+          // debugPrint("completed");
           if (widget.loop) {
-            controller.repeat(
-                period: widget.duration, reverse: widget.isReversed);
+            // debugPrint("should loop here");
+            Duration duration = widget.loopTimeoutDuration ?? Duration.zero;
+            // Future.delayed(duration)
+            Future.delayed(duration, () {
+              interpolator.originalPoints = widget.originalPoints;
+              interpolator.isReversed = widget.isReversed;
+              interpolator.reload();
+              controller.reset();
+              controller.forward(from: widget.begin);
+            });
           }
         }
-      })
-      ..addStatusListener((status) {
-        widget.stateChangeCallback?.call(animation.status, builtPoints);
       });
 
     controller.forward();
@@ -285,7 +300,8 @@ class _LineAnimatorState extends State<LineAnimator>
       interpolator.isReversed = widget.isReversed;
       interpolator.reload();
       controller.reset();
-      controller.forward(from: widget.begin);
+      startAnimation();
+      // controller.forward(from: widget.begin);
     }
     super.didUpdateWidget(oldWidget);
   }
